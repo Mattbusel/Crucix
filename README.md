@@ -340,7 +340,7 @@ crucix/
 
 ## Data Sources (27)
 
-### Tier 1: Core OSINT & Geopolitical (11)
+### Tier 1: Core OSINT & Geopolitical (12)
 
 | Source | What It Tracks | Auth |
 |--------|---------------|------|
@@ -353,7 +353,8 @@ crucix/
 | **ReliefWeb** | UN humanitarian crisis tracking | None |
 | **WHO** | Disease outbreaks and health emergencies | None |
 | **OFAC** | US Treasury sanctions (SDN list) | None |
-| **OpenSanctions** | Aggregated global sanctions (30+ sources) | Partial |
+| **OpenSanctions** | Aggregated global sanctions (30+ sources) | API key |
+| **US Restricted Parties** | DoD 1260H, Section 889, FCC Covered List, UFLPA, BIOSECURE (not in OFAC SDN): daily counts, names added/removed, source notices | None |
 | **ADS-B Exchange** | Unfiltered flight tracking including military | Paid |
 
 ### Tier 2: Economic & Financial (7)

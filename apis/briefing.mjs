@@ -17,6 +17,7 @@ import { briefing as reliefweb } from './sources/reliefweb.mjs';
 import { briefing as who } from './sources/who.mjs';
 import { briefing as ofac } from './sources/ofac.mjs';
 import { briefing as opensanctions } from './sources/opensanctions.mjs';
+import { briefing as usRestricted } from './sources/us-restricted.mjs';
 import { briefing as adsb } from './sources/adsb.mjs';
 
 // === Tier 2: Economic & Financial ===
@@ -67,7 +68,7 @@ export async function runSource(name, fn, ...args) {
 }
 
 export async function fullBriefing() {
-  console.error('[Crucix] Starting intelligence sweep — 29 sources...');
+  console.error('[Crucix] Starting intelligence sweep — 30 sources...');
   const start = Date.now();
 
   const allPromises = [
@@ -82,6 +83,7 @@ export async function fullBriefing() {
     runSource('WHO', who),
     runSource('OFAC', ofac),
     runSource('OpenSanctions', opensanctions),
+    runSource('US-Restricted', usRestricted),
     runSource('ADS-B', adsb),
 
     // Tier 2: Economic & Financial

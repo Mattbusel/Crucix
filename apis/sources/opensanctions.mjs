@@ -1,10 +1,17 @@
 // OpenSanctions — Global Sanctions & PEP Aggregator
-// No auth required for basic queries. Aggregates sanctions data from
-// OFAC, EU, UN, and 30+ other sources into a unified searchable dataset.
+// API key required (OPENSANCTIONS_API_KEY): api.opensanctions.org now answers
+// 401 "No API key provided." without one. Keys: https://www.opensanctions.org/api/
+// Aggregates sanctions data from OFAC, EU, UN, and 30+ other sources into a
+// unified searchable dataset.
 
 import { safeFetch } from '../utils/fetch.mjs';
 
 const BASE = 'https://api.opensanctions.org';
+
+function authHeaders() {
+  const key = process.env.OPENSANCTIONS_API_KEY;
+  return key ? { Authorization: `ApiKey ${key}` } : {};
+}
 
 // Search sanctioned entities by name/keyword
 export async function searchEntities(query, opts = {}) {
@@ -17,22 +24,22 @@ export async function searchEntities(query, opts = {}) {
   if (schema) params.set('schema', schema);    // e.g. "Person", "Company", "Organization"
   if (topics) params.set('topics', topics);     // e.g. "sanction", "crime", "poi"
 
-  return safeFetch(`${BASE}/search/default?${params}`, { timeout: 15000 });
+  return safeFetch(`${BASE}/search/default?${params}`, { timeout: 15000, headers: authHeaders() });
 }
 
 // Get available datasets/collections
 export async function getCollections() {
-  return safeFetch(`${BASE}/collections`, { timeout: 15000 });
+  return safeFetch(`${BASE}/collections`, { timeout: 15000, headers: authHeaders() });
 }
 
 // Get details about a specific dataset
 export async function getDataset(name) {
-  return safeFetch(`${BASE}/datasets/${name}`, { timeout: 15000 });
+  return safeFetch(`${BASE}/datasets/${name}`, { timeout: 15000, headers: authHeaders() });
 }
 
 // Get a specific entity by ID
 export async function getEntity(entityId) {
-  return safeFetch(`${BASE}/entities/${entityId}`, { timeout: 15000 });
+  return safeFetch(`${BASE}/entities/${entityId}`, { timeout: 15000, headers: authHeaders() });
 }
 
 // Compact entity for briefing output
@@ -52,11 +59,13 @@ function compactEntity(e) {
 // Compact search results
 function compactSearchResult(result, query) {
   const entities = (result?.results || []).map(compactEntity);
-  return {
+  const out = {
     query,
-    totalResults: result?.total || 0,
+    totalResults: result?.total?.value ?? result?.total ?? 0,
     entities: entities.slice(0, 10),
   };
+  if (result?.error) out.error = result.error;
+  return out;
 }
 
 // Key entities/subjects to monitor for sanctions intelligence
@@ -71,6 +80,15 @@ const BRIEFING_QUERIES = [
 
 // Briefing — search for notable sanctioned entities across key targets
 export async function briefing() {
+  if (!process.env.OPENSANCTIONS_API_KEY) {
+    return {
+      source: 'OpenSanctions',
+      error: 'No OpenSanctions API key. The API returns 401 without one: https://www.opensanctions.org/api/',
+      hint: 'Set OPENSANCTIONS_API_KEY environment variable',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   // Run searches in parallel
   const results = await Promise.all(
     BRIEFING_QUERIES.map(async (query) => {
@@ -95,9 +113,12 @@ export async function briefing() {
     (sum, r) => sum + (r.totalResults || 0), 0
   );
 
+  const errors = results.filter(r => r.error).map(r => ({ query: r.query, error: r.error }));
+
   return {
     source: 'OpenSanctions',
     timestamp: new Date().toISOString(),
+    ...(errors.length ? { errors } : {}),
     recentSearches: results,
     totalSanctionedEntities,
     datasets: datasetSummary,
